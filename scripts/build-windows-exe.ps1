@@ -1,5 +1,6 @@
 # Run this script from PowerShell. If you see an execution policy error, re-run
-# with:  powershell -ExecutionPolicy Bypass -File .\scripts\build-windows-exe.ps1
+# with (one line):  powershell -ExecutionPolicy Bypass -File .\scripts\build-windows-exe.ps1
+# or, inside PowerShell first run: Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 param(
     [string]$AppName = "GS1Desk",
