@@ -39,16 +39,19 @@ if (-not (Test-Path $IconPath)) {
     }
 }
 
-& $jpackage \
-    --type exe \
-    --name $AppName \
-    --app-version $Version \
-    --input (Split-Path -Path $JarPath) \
-    --main-jar (Split-Path -Leaf $JarPath) \
-    --main-class app.Main \
-    --dest $OutputDir \
-    --icon $IconPath \
-    --java-options "-Xmx512m"
+$arguments = @(
+    '--type', 'exe'
+    '--name', $AppName
+    '--app-version', $Version
+    '--input', (Split-Path -Path $JarPath)
+    '--main-jar', (Split-Path -Leaf $JarPath)
+    '--main-class', 'app.Main'
+    '--dest', $OutputDir
+    '--icon', $IconPath
+    '--java-options', '-Xmx512m'
+)
+
+& $jpackage @arguments
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Created $OutputDir\$AppName-$Version.exe"

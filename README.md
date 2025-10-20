@@ -17,7 +17,7 @@ using the `jpackage` tool that ships with JDK 17+. A convenience script is
 included to wrap the fat JAR into `GS1Desk.exe`:
 
 ```powershell
-# Run after `mvn clean package`
+# Run after `mvn clean package` from the project root
 scripts\build-windows-exe.ps1
 ```
 
@@ -35,6 +35,12 @@ the current session and then launch the script normally:
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\scripts\build-windows-exe.ps1
+```
+
+If you prefer a single command, separate them with a semicolon:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; .\scripts\build-windows-exe.ps1
 ```
 
 By default the script uses the standard Java icon and bundles the JRE detected
