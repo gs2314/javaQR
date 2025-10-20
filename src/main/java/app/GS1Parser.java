@@ -332,12 +332,14 @@ public final class GS1Parser {
             register(new AiDefinition("00", "SSCC", 18, CharacterSet.NUMERIC));
             register(new AiDefinition("01", "GTIN", 14, CharacterSet.NUMERIC));
             register(new AiDefinition("02", "Content GTIN", 14, CharacterSet.NUMERIC));
+            register(new AiDefinition("10", "Batch/Lot", 1, 20, CharacterSet.GS1_ALPHANUMERIC));
             register(new AiDefinition("11", "Production date", 6, CharacterSet.NUMERIC));
             register(new AiDefinition("12", "Due date", 6, CharacterSet.NUMERIC));
             register(new AiDefinition("13", "Packaging date", 6, CharacterSet.NUMERIC));
             register(new AiDefinition("15", "Best before", 6, CharacterSet.NUMERIC));
             register(new AiDefinition("16", "Sell by", 6, CharacterSet.NUMERIC));
             register(new AiDefinition("17", "Expiration date", 6, CharacterSet.NUMERIC));
+            register(new AiDefinition("21", "Serial", 1, 20, CharacterSet.GS1_ALPHANUMERIC));
             register(new AiDefinition("20", "Variant", 2, CharacterSet.NUMERIC));
             register(new AiDefinition("30", "Count", 1, 8, CharacterSet.NUMERIC));
             register(new AiDefinition("37", "Units contained", 1, 8, CharacterSet.NUMERIC));
