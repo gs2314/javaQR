@@ -131,7 +131,7 @@ public final class GS1Parser {
         if (VARIABLE_LENGTH_AIS.contains(ai)) {
             return true;
         }
-        if (ai.length() == 3) {
+        if (ai.length() == 3 && ai.chars().allMatch(Character::isDigit)) {
             int value = Integer.parseInt(ai);
             if ((value >= 240 && value <= 243) || (value >= 250 && value <= 254) || (value >= 400 && value <= 426)) {
                 return true;
