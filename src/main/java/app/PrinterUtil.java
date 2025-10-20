@@ -1,5 +1,6 @@
 package app;
 
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.print.PageFormat;
@@ -11,11 +12,13 @@ public final class PrinterUtil {
     private PrinterUtil() {
     }
 
-    public static void printBarcode(BufferedImage image, String title, int dpi) throws PrinterException {
+    public static void printBarcode(BufferedImage image, PrintOptions options) throws PrinterException {
         PrinterJob job = PrinterJob.getPrinterJob();
-        job.setJobName(title == null || title.isBlank() ? "GS1 DataMatrix" : title);
+        String title = options.title() == null || options.title().isBlank() ? "GS1 DataMatrix" : options.title();
+        job.setJobName(title);
+        job.setCopies(options.copies());
         PageFormat pageFormat = job.defaultPage();
-        job.setPrintable(new BarcodePrintable(image, title, dpi), pageFormat);
+        job.setPrintable(new BarcodePrintable(image, options), pageFormat);
         if (job.printDialog()) {
             job.print();
         }
@@ -23,13 +26,11 @@ public final class PrinterUtil {
 
     private static class BarcodePrintable implements Printable {
         private final BufferedImage image;
-        private final String title;
-        private final int dpi;
+        private final PrintOptions options;
 
-        private BarcodePrintable(BufferedImage image, String title, int dpi) {
+        private BarcodePrintable(BufferedImage image, PrintOptions options) {
             this.image = image;
-            this.title = title;
-            this.dpi = dpi;
+            this.options = options;
         }
 
         @Override
@@ -40,22 +41,28 @@ public final class PrinterUtil {
             Graphics2D g2 = (Graphics2D) graphics;
             g2.translate(pageFormat.getImageableX(), pageFormat.getImageableY());
 
-            int targetPixels = (int) Math.round((dpi / 25.4) * 40.0);
-            double scaleX = targetPixels / (double) image.getWidth();
-            double scaleY = targetPixels / (double) image.getHeight();
+            double targetPixels = options.dpi() * (options.sizeMillimetres() / 25.4);
+            double scaleX = targetPixels / image.getWidth();
+            double scaleY = targetPixels / image.getHeight();
             double scale = Math.min(scaleX, scaleY);
 
             int drawWidth = (int) Math.round(image.getWidth() * scale);
             int drawHeight = (int) Math.round(image.getHeight() * scale);
 
             int yOffset = 0;
-            if (title != null && !title.isBlank()) {
-                g2.setFont(g2.getFont().deriveFont(12f));
-                g2.drawString(title, 0, g2.getFontMetrics().getAscent());
+            if (options.title() != null && !options.title().isBlank()) {
+                g2.setFont(g2.getFont().deriveFont(Font.BOLD, 12f));
+                g2.drawString(options.title(), 0, g2.getFontMetrics().getAscent());
                 yOffset = g2.getFontMetrics().getHeight() + 5;
             }
 
             g2.drawImage(image, 0, yOffset, drawWidth, yOffset + drawHeight, 0, 0, image.getWidth(), image.getHeight(), null);
+
+            if (options.includeHri() && options.hriText() != null && !options.hriText().isBlank()) {
+                int textY = yOffset + drawHeight + g2.getFontMetrics().getHeight();
+                g2.setFont(g2.getFont().deriveFont(10f));
+                g2.drawString(options.hriText(), 0, textY);
+            }
             return PAGE_EXISTS;
         }
     }
