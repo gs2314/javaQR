@@ -10,6 +10,21 @@ mvn clean package
 
 This creates `target/GS1Desk-1.0.0-shaded.jar` containing all dependencies.
 
+## Create a Windows `.exe`
+
+After packaging the shaded JAR you can turn it into a native Windows launcher by
+using the `jpackage` tool that ships with JDK 17+. A convenience script is
+included to wrap the fat JAR into `GS1Desk.exe`:
+
+```powershell
+# Run after `mvn clean package`
+scripts\build-windows-exe.ps1
+```
+
+By default the script uses the standard Java icon and bundles the JRE detected
+by `JAVA_HOME`. Edit the script if you want to embed a custom icon, adjust JVM
+options, or include extra resources.
+
 ## Running
 
 ```bash
