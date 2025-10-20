@@ -1,3 +1,6 @@
+# Run this script from PowerShell. If you see an execution policy error, re-run
+# with:  powershell -ExecutionPolicy Bypass -File .\scripts\build-windows-exe.ps1
+
 param(
     [string]$AppName = "GS1Desk",
     [string]$Version = "1.0.0",

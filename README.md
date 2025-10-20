@@ -21,6 +21,16 @@ included to wrap the fat JAR into `GS1Desk.exe`:
 scripts\build-windows-exe.ps1
 ```
 
+If Windows blocks the script because of your execution policy, run it in a
+PowerShell session with policy bypassed for just that invocation:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-windows-exe.ps1
+```
+
+Alternatively, start PowerShell and execute `Set-ExecutionPolicy -Scope Process
+-ExecutionPolicy Bypass` before invoking the script.
+
 By default the script uses the standard Java icon and bundles the JRE detected
 by `JAVA_HOME`. Edit the script if you want to embed a custom icon, adjust JVM
 options, or include extra resources.
