@@ -59,27 +59,45 @@ public final class GS1Parser {
                 while (cursor < normalized.length() && normalized.charAt(cursor) != GS) {
                     cursor++;
                 }
+                boolean terminatedByGs = cursor < normalized.length() && normalized.charAt(cursor) == GS;
                 String value = normalized.substring(valueStart, cursor);
-                MissingAiInfo missingAi = detectEmbeddedAi(value);
+                boolean checkEmbeddedAi = !terminatedByGs && ai.equals("10");
+                MissingAiInfo missingAi = checkEmbeddedAi ? detectEmbeddedAi(value) : null;
                 boolean heuristicsApplied = false;
+                boolean advanceToCursor = true;
                 if (missingAi != null) {
+                    int embeddedPosition = missingAi.position();
                     String embeddedAi = missingAi.match().ai();
-                    if (parseOptions.heuristicRepair() && ai.equals("10") && embeddedAi.equals("21")) {
-                        int candidateValueEnd = missingAi.position();
-                        String candidateBatch = value.substring(0, candidateValueEnd);
-                        String candidateSerial = value.substring(candidateValueEnd + missingAi.match().length());
-                        if (!candidateBatch.isEmpty() && candidateBatch.length() <= definition.maxLength()
-                                && candidateSerial.length() >= 1 && candidateSerial.length() <= 20
-                                && Character.isLetterOrDigit(candidateSerial.charAt(0))) {
+                    String candidateBatch = value.substring(0, embeddedPosition);
+                    if (parseOptions.heuristicRepair() && ai.equals("10")) {
+                        if (embeddedAi.equals("21")) {
+                            String candidateSerial = value.substring(embeddedPosition + missingAi.match().length());
+                            if (!candidateBatch.isEmpty() && candidateBatch.length() <= definition.maxLength()
+                                    && candidateSerial.length() >= 1 && candidateSerial.length() <= 20
+                                    && Character.isLetterOrDigit(candidateSerial.charAt(0))) {
+                                value = candidateBatch;
+                                index = valueStart + embeddedPosition;
+                                heuristicsApplied = true;
+                                advanceToCursor = false;
+                                result.setHeuristicsApplied();
+                                result.addWarning(new ParseMessage("Applied heuristic split between (10) and (21)", index));
+                            }
+                        } else if (embeddedAi.equals("17") && !candidateBatch.isEmpty() && candidateBatch.length() <= definition.maxLength()) {
                             value = candidateBatch;
-                            index = valueStart + candidateValueEnd;
+                            index = valueStart + embeddedPosition;
                             heuristicsApplied = true;
+                            advanceToCursor = false;
                             result.setHeuristicsApplied();
-                            result.addWarning(new ParseMessage("Applied heuristic split between (10) and (21)", index));
+                            result.addWarning(new ParseMessage("Applied heuristic split before AI (17) after (10)", index));
                         }
                     }
                     if (!heuristicsApplied) {
-                        result.addError(new ParseMessage("Expected GS after variable-length AI (" + ai + ") before AI (" + embeddedAi + ")", valueStart + missingAi.position()));
+                        if (!candidateBatch.isEmpty()) {
+                            value = candidateBatch;
+                            index = valueStart + embeddedPosition;
+                            advanceToCursor = false;
+                        }
+                        result.addError(new ParseMessage("Expected GS after variable-length AI (" + ai + ") before AI (" + embeddedAi + ")", valueStart + embeddedPosition));
                     }
                 }
 
@@ -99,7 +117,7 @@ public final class GS1Parser {
                 enforceCharacterSet(element, parseOptions);
                 result.addElement(element);
                 applyValidation(element);
-                if (!heuristicsApplied) {
+                if (advanceToCursor) {
                     index = cursor;
                 }
                 if (index < normalized.length() && normalized.charAt(index) == GS) {
@@ -238,16 +256,36 @@ public final class GS1Parser {
     }
 
     private static MissingAiInfo detectEmbeddedAi(String value) {
+        MissingAiInfo fallback = null;
         for (int i = 1; i < value.length(); i++) {
             if (!Character.isDigit(value.charAt(i))) {
                 continue;
             }
             AiMatch match = AiDictionary.match(value, i);
             if (match != null) {
-                return new MissingAiInfo(i, match);
+                AiDefinition definition = match.definition();
+                int valueIndex = i + match.length();
+                int remaining = value.length() - valueIndex;
+                if (remaining < definition.minLength()) {
+                    continue;
+                }
+                if (valueIndex >= value.length()) {
+                    continue;
+                }
+                char nextChar = value.charAt(valueIndex);
+                if (!definition.characterSet().isAllowed(nextChar, false)) {
+                    continue;
+                }
+                MissingAiInfo candidate = new MissingAiInfo(i, match);
+                if ("17".equals(match.ai()) || "21".equals(match.ai())) {
+                    return candidate;
+                }
+                if (fallback == null) {
+                    fallback = candidate;
+                }
             }
         }
-        return null;
+        return fallback;
     }
 
     private static String scaledValue(String raw, char modifier) {
