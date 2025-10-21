@@ -61,39 +61,66 @@ public final class GS1Parser {
                 }
                 boolean terminatedByGs = cursor < normalized.length() && normalized.charAt(cursor) == GS;
                 String value = normalized.substring(valueStart, cursor);
-                boolean checkEmbeddedAi = !terminatedByGs && ai.equals("10");
+                boolean checkEmbeddedAi = !terminatedByGs && (ai.equals("10") || ai.equals("21"));
                 MissingAiInfo missingAi = checkEmbeddedAi ? detectEmbeddedAi(value) : null;
                 boolean heuristicsApplied = false;
                 boolean advanceToCursor = true;
                 if (missingAi != null) {
                     int embeddedPosition = missingAi.position();
                     String embeddedAi = missingAi.match().ai();
-                    String candidateBatch = value.substring(0, embeddedPosition);
-                    if (parseOptions.heuristicRepair() && ai.equals("10")) {
-                        if (embeddedAi.equals("21")) {
-                            String candidateSerial = value.substring(embeddedPosition + missingAi.match().length());
-                            if (!candidateBatch.isEmpty() && candidateBatch.length() <= definition.maxLength()
-                                    && candidateSerial.length() >= 1 && candidateSerial.length() <= 20
-                                    && Character.isLetterOrDigit(candidateSerial.charAt(0))) {
-                                value = candidateBatch;
+                    String prefixValue = value.substring(0, embeddedPosition);
+                    if (parseOptions.heuristicRepair()) {
+                        if (ai.equals("10")) {
+                            if (embeddedAi.equals("21")) {
+                                String candidateSerial = value.substring(embeddedPosition + missingAi.match().length());
+                                if (!prefixValue.isEmpty() && prefixValue.length() <= definition.maxLength()
+                                        && candidateSerial.length() >= 1 && candidateSerial.length() <= 20
+                                        && Character.isLetterOrDigit(candidateSerial.charAt(0))) {
+                                    value = prefixValue;
+                                    index = valueStart + embeddedPosition;
+                                    heuristicsApplied = true;
+                                    advanceToCursor = false;
+                                    result.setHeuristicsApplied();
+                                    result.addWarning(new ParseMessage("Applied heuristic split between (10) and (21)", index));
+                                }
+                            } else if (embeddedAi.equals("17") && !prefixValue.isEmpty()
+                                    && prefixValue.length() <= definition.maxLength()) {
+                                value = prefixValue;
                                 index = valueStart + embeddedPosition;
                                 heuristicsApplied = true;
                                 advanceToCursor = false;
                                 result.setHeuristicsApplied();
-                                result.addWarning(new ParseMessage("Applied heuristic split between (10) and (21)", index));
+                                result.addWarning(new ParseMessage("Applied heuristic split before AI (17) after (10)", index));
                             }
-                        } else if (embeddedAi.equals("17") && !candidateBatch.isEmpty() && candidateBatch.length() <= definition.maxLength()) {
-                            value = candidateBatch;
-                            index = valueStart + embeddedPosition;
-                            heuristicsApplied = true;
-                            advanceToCursor = false;
-                            result.setHeuristicsApplied();
-                            result.addWarning(new ParseMessage("Applied heuristic split before AI (17) after (10)", index));
+                        } else if (ai.equals("21")) {
+                            if (embeddedAi.equals("17")) {
+                                int remainder = value.length() - (embeddedPosition + missingAi.match().length());
+                                if (!prefixValue.isEmpty() && prefixValue.length() <= definition.maxLength()
+                                        && remainder >= missingAi.match().definition().minLength()) {
+                                    value = prefixValue;
+                                    index = valueStart + embeddedPosition;
+                                    heuristicsApplied = true;
+                                    advanceToCursor = false;
+                                    result.setHeuristicsApplied();
+                                    result.addWarning(new ParseMessage("Applied heuristic split before AI (17) after (21)", index));
+                                }
+                            } else if (embeddedAi.equals("10")) {
+                                int remainder = value.length() - (embeddedPosition + missingAi.match().length());
+                                if (!prefixValue.isEmpty() && prefixValue.length() <= definition.maxLength()
+                                        && remainder >= missingAi.match().definition().minLength()) {
+                                    value = prefixValue;
+                                    index = valueStart + embeddedPosition;
+                                    heuristicsApplied = true;
+                                    advanceToCursor = false;
+                                    result.setHeuristicsApplied();
+                                    result.addWarning(new ParseMessage("Applied heuristic split before AI (10) after (21)", index));
+                                }
+                            }
                         }
                     }
                     if (!heuristicsApplied) {
-                        if (!candidateBatch.isEmpty()) {
-                            value = candidateBatch;
+                        if (!prefixValue.isEmpty()) {
+                            value = prefixValue;
                             index = valueStart + embeddedPosition;
                             advanceToCursor = false;
                         }
